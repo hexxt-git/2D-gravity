@@ -27,6 +27,17 @@ dt = 0
 textFont = load_font("font.ttf")
 selectedColor = Color( 55, 138, 34, 255)
 
+def dot( vector1, vector2):
+    return vector1.x*vector2.x + vector1.y*vector2.y
+def vectorMultiply( vector, number):
+    newVector = Vector2( vector.x*number, vector.y*number)
+    return newVector
+def vectorSubtract( vector1, vector2):
+    newVector = Vector2( vector1.x-vector2.x, vector1.y-vector2.y)
+    return newVector
+def vectorReflect( vector1, vector2):
+    reflected = vectorSubtract( vector1 , vectorMultiply( vector2, 2 * dot( vector1, vector2)/dot( vector2, vector2)))
+    return reflected
 class Planet():
     def __init__(self, x, y, size, density, style):
         self.x = x
@@ -61,20 +72,12 @@ class Planet():
         for planet in planets:
             if planet.id != self.id:
                 if np.hypot(planet.x-self.x, planet.y-self.y) < planet.size+self.size:
-                    #literally just stolen from https://github.com/xnx/collision/blob/master/collision.py idfk whats going on
-                    m1, m2 = planet.size*planet.density, self.size*self.density
-                    M = m1 + m2
-                    r1, r2 = planet.size, self.size
-                    d = pow(np.linalg.norm(r1 - r2), 2)
-                    if d == 0:
-                        d = 0.1
-                    v1, v2 = np.array((planet.vx, planet.vy)), np.array((self.vx, self.vy))
-                    u1 = v1 - 2*m2 / M * np.dot(v1-v2, r1-r2) / d * (r1 - r2)
-                    u2 = v2 - 2*m1 / M * np.dot(v2-v1, r2-r1) / d * (r2 - r1)
-                    planet.vx = u1[0] * bounce
-                    planet.vy = u1[1] * bounce
-                    self.vx = u2[0] * bounce
-                    self.vy = u2[1] * bounce
+                    # I MADE THIS MY SELF HOLY FUCKS
+                    vector = Vector2( self.vx, self.vy)
+                    normal = Vector2( self.x-planet.x, self.y-planet.y)
+                    newVector = vectorMultiply(vectorReflect( vector, normal), bounce)
+                    self.vx = newVector.x
+                    self.vy = newVector.y
         if not self.static:
             self.x += self.vx * dt * simSpeed * 10
             self.y += self.vy * dt * simSpeed * 10
@@ -151,8 +154,7 @@ while not window_should_close():
         playing = not playing
     if is_key_pressed(KEY_TAB):
         mode += 1
-        if mode > 2:
-            mode = 0
+        mode %= 4
     if is_key_down(KEY_KP_ADD):
         power += 1
     if is_key_down(KEY_KP_SUBTRACT):
@@ -345,6 +347,18 @@ while not window_should_close():
             draw_text_ex( textFont, 'A: '+str(template.style[3]), Vector2( 30, 225), 32, 1, BLACK)
     if mode == 2:
         draw_text( 'mode: deleting', 20, 15, 30, BLACK)
+    if mode == 3:
+        velocitySum = 0
+        massSum = 0
+        for planet in planets:
+            velocitySum += np.hypot(planet.vx, planet.y)
+            massSum += planet.size * planet.density
+        draw_text( 'mode: statistics', 20, 15, 30, BLACK)
+        draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
+        draw_text_ex( textFont, 'Planets: '+str(len(planets)), Vector2( 30, 60), 32, 1, BLACK)
+        draw_text_ex( textFont, 'velocity: '+str(int(velocitySum/10)), Vector2( 30, 85), 32, 1, BLACK)
+        draw_text_ex( textFont, 'mass: '+str(int(massSum)), Vector2( 30, 110), 32, 1, BLACK)
+
     if drawing == True:
         line( startX, startY, ((get_mouse_x() - width/2)/cameraZ)-cameraX, ((get_mouse_y() - height/2)/cameraZ)-cameraY, WHITE)
     draw_text( str(power), 270, 17, 30, BLACK)
