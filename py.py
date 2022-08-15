@@ -11,18 +11,18 @@ cameraX = 1
 cameraY = 1
 cameraZ = 0.5
 scroll = 0.11
-mode = 1
+mode = 0
 selected = 0
 power = 5
 drawing = False
 playing = True
-bounce = 0.1
+bounce = True
 simSpeed = 0.7
 randomize = False
-walls = True
-wallsX = 4000
-wallsY = 3000
-G = 0.01
+walls = False
+wallsX = 1500
+wallsY = 1000
+G = 50
 dt = 0
 textFont = load_font("font.ttf")
 selectedColor = Color( 55, 138, 34, 255)
@@ -115,7 +115,7 @@ for i in range(1000):
     stars.append([ randint( -width*3, width*6), randint( -height*3, height*6), random()+0.5])
 
 planets = []
-for i in range(0):
+for i in range(30):
     planets.append(Planet( randint( -1500, 1500), randint( -1500, 1500), randint( 10, 80), random()*15+15, [ randint( 50, 200), randint( 50, 200), randint( 50, 200), 255]))
 
 template = Planet( 0, 0, 50, 10, [ 0, 80, 180, 255])
@@ -133,11 +133,11 @@ while not window_should_close():
                     d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
                     if d > A.size + B.size:
                         a = atan2(B.y-A.y,B.x-A.x)
-                        force =  G * pow(A.size * B.size * A.density * B.density, 2) / pow( d, 2)
+                        force =  (G * A.size * B.size * A.density * B.density) / pow( d, 2)
                         dx = cos(a)*force
                         dy = sin(a)*force
-                        A.vx += dx / pow(A.size * A.density, 2)
-                        A.vy += dy / pow(A.size * A.density, 2)
+                        A.vx += dx / (A.size * A.density)
+                        A.vy += dy / (A.size * A.density)
         fix(planets)
         fix(planets)
         fix(planets)
@@ -158,20 +158,26 @@ while not window_should_close():
     if is_key_down(KEY_KP_SUBTRACT):
         power -= 1
     if mode == 0:
-        selected = selected%3
+        selected = selected%5
         if is_key_pressed(KEY_RIGHT)|is_key_pressed(KEY_LEFT):
             if selected == 0:
                 walls = not walls
+            if selected == 3:
+                bounce = not bounce
         if is_key_down(KEY_RIGHT):
             if selected == 1:
                 wallsX += power * 10
             if selected == 2:
                 wallsY += power * 10
+            if selected == 4:
+                G += power
         if is_key_down(KEY_LEFT):
             if selected == 1:
                 wallsX -= power * 10
             if selected == 2:
                 wallsY -= power * 10
+            if selected == 4:
+                G -= power
     if mode == 1:
         selected = selected%8
         # new planet
@@ -187,8 +193,12 @@ while not window_should_close():
                 planets.append(Planet( startX, startY, template.size, template.density, template.style))
             else:
                 planets.append(Planet( startX, startY, random()*100+10, random()*30+20, [ randint( 50, 200), randint( 50, 200), randint( 50, 200), 255]))
-            planets[-1].vx = (endX - startX)*cameraZ / 10
-            planets[-1].vy = (endY - startY)*cameraZ / 10
+            planets[-1].vx = pow((endX - startX)*cameraZ / 10, 2)
+            if endX - startX > 0:
+                planets[-1].vx *= -1
+            planets[-1].vy = pow((endY - startY)*cameraZ / 10, 2)
+            if endY - startY > 0:
+                planets[-1].vy *= -1
             planets[-1].static = template.static
         # settings
         if is_key_down(KEY_RIGHT):
@@ -256,8 +266,10 @@ while not window_should_close():
     #rendering
     begin_drawing()
     clear_background(Color( 3, 3, 5, 255))
+    #stars
     for star in stars:
-        draw_circle( int(star[0]+(cameraX*0.12)), int(star[1]+(cameraY*0.12)), star[2], WHITE)
+        if cameraZ > 0.01:
+            draw_circle( int(star[0]+(cameraX*0.12)), int(star[1]+(cameraY*0.12)), star[2], WHITE)
     for planet in planets:
         planet.draw()
     if walls:
@@ -281,6 +293,15 @@ while not window_should_close():
             draw_text_ex( textFont, 'walls y: '+str(floor(wallsY/10)), Vector2( 30, 110), 32, 1, selectedColor)
         else:
             draw_text_ex( textFont, 'walls y: '+str(floor(wallsY/10)), Vector2( 30, 110), 32, 1, BLACK)
+        if selected == 3:
+            draw_text_ex( textFont, 'bounce: '+str(bounce), Vector2( 30, 135), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, 'bounce: '+str(bounce), Vector2( 30, 135), 32, 1, BLACK)
+        if selected == 4:
+            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 160), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 160), 32, 1, BLACK)
+    
     if mode == 1:
         draw_text( 'mode: drawing', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
@@ -331,5 +352,4 @@ while not window_should_close():
         draw_rectangle( width-20, 20, 5, 20, WHITE)
         draw_rectangle( width-31, 20, 5, 20, WHITE)
     end_drawing()
-
 close_window()
