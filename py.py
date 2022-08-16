@@ -75,10 +75,11 @@ class Planet():
         for planet in planets:
             if planet.id != self.id:
                 if np.hypot(planet.x-self.x, planet.y-self.y) < planet.size+self.size:
-                    # I MADE THIS MY SELF HOLY FUCKS
                     vector = Vector2( self.vx, self.vy)
                     normal = Vector2( self.x-planet.x, self.y-planet.y)
-                    newVector = vectorMultiply(vectorReflect( vector, normal), bounce)
+                    newVector = vectorReflect( vector, normal)
+                    if not bounce:
+                        newVector = vectorMultiply( newVector, 0.3)
                     self.vx = newVector.x
                     self.vy = newVector.y
                     
@@ -127,11 +128,19 @@ def merge(planets):
             for B in planets:
                 if A.id != B.id:
                     if sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 )) < A.size + B.size:
-                        print(A.id)
                         for C in range(len(planets)):
-                            if planets[C].id == A.id:
+                            if planets[C].id == B.id:
                                 planets.pop(C)
                                 break
+                        Aratio = A.size*A.density / (A.size*A.density+B.size*B.density)
+                        Bratio = B.size*B.density / (A.size*A.density+B.size*B.density)
+                        for channel in range(4):
+                            A.style[channel] = int(A.style[channel]*Aratio + B.style[channel]*Bratio)
+                        A.vx = A.vx*Aratio + B.vx*Bratio
+                        A.vy = A.vy*Aratio + B.vy*Bratio
+                        A.density = A.density*Aratio + B.density*Bratio
+                        A.size = A.size+B.size
+                    
 stars = []
 for i in range(1000):
     stars.append([ randint( -width*3, width*6), randint( -height*3, height*6), random()+0.5])
@@ -176,6 +185,7 @@ while not window_should_close():
         power += 1
     if is_key_down(KEY_KP_SUBTRACT):
         power -= 1
+    #settings
     if mode == 0:
         selected = selected%5
         if is_key_pressed(KEY_RIGHT)|is_key_pressed(KEY_LEFT):
@@ -183,19 +193,21 @@ while not window_should_close():
                 walls = not walls
             if selected == 3:
                 bounce = not bounce
+            if selected == 4:
+                doMerge = not doMerge
         if is_key_down(KEY_RIGHT):
             if selected == 1:
                 wallsX += power * 10
             if selected == 2:
                 wallsY += power * 10
-            if selected == 4:
+            if selected == 5:
                 G += power
         if is_key_down(KEY_LEFT):
             if selected == 1:
                 wallsX -= power * 10
             if selected == 2:
                 wallsY -= power * 10
-            if selected == 4:
+            if selected == 5:
                 G -= power
     if mode == 1:
         selected = selected%8
@@ -219,7 +231,7 @@ while not window_should_close():
             if endY - startY > 0:
                 planets[-1].vy *= -1
             planets[-1].static = template.static
-        # settings
+        # planet parameters
         if is_key_down(KEY_RIGHT):
             if selected == 0:
                 template.size += power
@@ -317,9 +329,13 @@ while not window_should_close():
         else:
             draw_text_ex( textFont, 'bounce: '+str(bounce), Vector2( 30, 135), 32, 1, BLACK)
         if selected == 4:
-            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 160), 32, 1, selectedColor)
+            draw_text_ex( textFont, 'merge: '+str(doMerge), Vector2( 30, 160), 32, 1, selectedColor)
         else:
-            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 160), 32, 1, BLACK)
+            draw_text_ex( textFont, 'merge: '+str(doMerge), Vector2( 30, 160), 32, 1, BLACK)
+        if selected == 5:
+            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 185), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 185), 32, 1, BLACK)
     
     if mode == 1:
         draw_text( 'mode: drawing', 20, 15, 30, BLACK)
