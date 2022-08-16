@@ -23,7 +23,7 @@ randomize = False
 walls = False
 wallsX = 1500
 wallsY = 1000
-G = 50
+G = 0.8
 dt = 0
 textFont = load_font("font.ttf")
 selectedColor = Color( 55, 138, 34, 255)
@@ -44,6 +44,8 @@ def vectorReflect( vector1, vector2):
     else:
         reflected = Vector2( 0, 0)
     return reflected
+def mass(planet):
+    return pow( planet.size, 2) * pi * planet.density
 class Planet():
     def __init__(self, x, y, size, density, style):
         self.x = x
@@ -137,14 +139,14 @@ def merge(planets):
                             if planets[C].id == B.id:
                                 planets.pop(C)
                                 break
-                        Aratio = A.size*A.density / (A.size*A.density+B.size*B.density)
-                        Bratio = B.size*B.density / (A.size*A.density+B.size*B.density)
+                        Aratio = mass(A) / (mass(A)+mass(B))
+                        Bratio = mass(B) / (mass(A)+mass(B))
                         for channel in range(4):
                             A.style[channel] = int(A.style[channel]*Aratio + B.style[channel]*Bratio)
                         A.vx = A.vx*Aratio + B.vx*Bratio
                         A.vy = A.vy*Aratio + B.vy*Bratio
                         A.density = A.density*Aratio + B.density*Bratio
-                        A.size = A.size + B.size
+                        A.size = sqrt( pow( A.size, 2) + pow( B.size, 2) )
                         A.x = A.x*Aratio + B.x*Bratio
                         A.x = A.x*Aratio + B.x*Bratio
 stars = []
@@ -169,12 +171,12 @@ while not window_should_close():
                     d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
                     if d > A.size + B.size:
                         a = atan2(B.y-A.y,B.x-A.x)
-                        force =  (G * A.size * B.size * A.density * B.density) / pow( d, 2)
+                        force =  G * mass(A) * mass(B) / pow( d, 2)
                         dx = cos(a)*force
                         dy = sin(a)*force
-                        A.vx += dx / (A.size * A.density)
-                        A.vy += dy / (A.size * A.density)
-        merge(planets, orbited, orbiter)
+                        A.vx += dx / mass(A)
+                        A.vy += dy / mass(A)
+        merge(planets)
         fix(planets)
     #input
     dt = get_frame_time()
@@ -356,7 +358,6 @@ while not window_should_close():
             draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 185), 32, 1, selectedColor)
         else:
             draw_text_ex( textFont, 'gravity: '+str(G+0.0), Vector2( 30, 185), 32, 1, BLACK)
-    
     if mode == 1:
         draw_text( 'mode: drawing', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
@@ -405,15 +406,15 @@ while not window_should_close():
         massSum = 0
         for planet in planets:
             velocitySum += sqrt(planet.vx**2 + planet.vy**2)
-            massSum += planet.size * planet.density
+            massSum += mass(planet)
         draw_text( 'mode: statistics', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
         draw_text_ex( textFont, 'Planets: '+str(len(planets)), Vector2( 30, 60), 32, 1, BLACK)
         draw_text_ex( textFont, 'velocity: '+str(int(velocitySum/10)), Vector2( 30, 85), 32, 1, BLACK)
         draw_text_ex( textFont, 'mass: '+str(int(massSum)), Vector2( 30, 110), 32, 1, BLACK)
     if mode == 4:
-        circle_line( planets[orbiter].x, planets[orbiter].y, planets[orbiter].size+10, BLUE)
-        circle_line( planets[orbited].x, planets[orbited].y, planets[orbited].size+10, GREEN)
+        circle_line( planets[orbiter].x, planets[orbiter].y, planets[orbiter].size*1.1, BLUE)
+        circle_line( planets[orbited].x, planets[orbited].y, planets[orbited].size*1.1, GREEN)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
         draw_text( 'mode: make orbit', 20, 15, 30, BLACK)
         if selected == 0:
