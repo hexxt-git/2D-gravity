@@ -17,7 +17,8 @@ power = 5
 drawing = False
 playing = True
 bounce = True
-simSpeed = 0.7
+doMerge = True
+simSpeed = 0.3
 randomize = False
 walls = False
 wallsX = 1500
@@ -56,6 +57,8 @@ class Planet():
     def drawV(self):
         line( self.x, self.y, self.x+self.vx*10, self.y+self.vy*10, GREEN)
     def update(self, planets):
+        self.x += self.vx * dt * simSpeed * 10 * (not self.static)
+        self.y += self.vy * dt * simSpeed * 10 * (not self.static)
         if walls:
             if self.x-self.size <= -wallsX:
                 self.vx *= -bounce
@@ -78,9 +81,6 @@ class Planet():
                     newVector = vectorMultiply(vectorReflect( vector, normal), bounce)
                     self.vx = newVector.x
                     self.vy = newVector.y
-        if not self.static:
-            self.x += self.vx * dt * simSpeed * 10
-            self.y += self.vy * dt * simSpeed * 10
                     
 
 def circle( x, y, r, color):
@@ -91,19 +91,27 @@ def text( text, x, y, size, color):
     draw_text( text, int(( x+cameraX)*cameraZ + width/2), int(( y+cameraY)*cameraZ + height/2), int(size*cameraZ+1), color)
 def fix(planets):
     for A in planets:
-        if not A.static:
-            for B in planets:
-                if A.id != B.id:
-                    d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
-                    if d < A.size + B.size:
-                        e = A.size + B.size - d
-                        a = atan2(B.y-A.y,B.x-A.x)
-                        dx = cos(a) * e/2
-                        dy = sin(a) * e/2
-                        A.x -= dx
-                        A.y -= dy
-                        B.x += dx
-                        B.y += dy
+            if not doMerge:
+                for B in planets:
+                    if A.id != B.id:
+                        d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
+                        if d < A.size + B.size:
+                            Av = hypot(A.vx, A.vy)
+                            Bv = hypot(B.vx, B.vy)
+                            Aratio, Bratio = 0, 0
+                            if Av+Bv != 0:
+                                Aratio = Av / (Av+Bv)
+                                Bratio = Bv / (Av+Bv)
+                            else:
+                                print("F")
+                            excess = A.size + B.size - d
+                            angle = atan2(B.y-A.y,B.x-A.x)
+                            excessX = cos(angle) * e/2
+                            excessY = sin(angle) * e/2
+                            A.x -= excessX * Aratio
+                            A.y -= excessY * Aratio
+                            B.x += excessX * Bratio
+                            B.y += excessY * Bratio
             if walls:
                 if A.x-A.size <= -wallsX:
                     A.x -= A.x + wallsX - A.size
@@ -113,6 +121,17 @@ def fix(planets):
                     A.x -= A.x - wallsX + A.size
                 if A.y+A.size >= wallsY:
                     A.y -= A.y - wallsY + A.size
+def merge(planets):
+    if doMerge:
+        for A in planets:
+            for B in planets:
+                if A.id != B.id:
+                    if sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 )) < A.size + B.size:
+                        print(A.id)
+                        for C in range(len(planets)):
+                            if planets[C].id == A.id:
+                                planets.pop(C)
+                                break
 stars = []
 for i in range(1000):
     stars.append([ randint( -width*3, width*6), randint( -height*3, height*6), random()+0.5])
@@ -128,7 +147,6 @@ set_target_fps(60)
 while not window_should_close():
     #simulation
     if playing:
-        fix(planets)
         for A in planets:
             A.update(planets)
             for B in planets:
@@ -141,8 +159,7 @@ while not window_should_close():
                         dy = sin(a)*force
                         A.vx += dx / (A.size * A.density)
                         A.vy += dy / (A.size * A.density)
-        fix(planets)
-        fix(planets)
+        merge(planets)
         fix(planets)
     #input
     dt = get_frame_time()
