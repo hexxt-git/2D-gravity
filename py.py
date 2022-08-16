@@ -27,6 +27,8 @@ G = 50
 dt = 0
 textFont = load_font("font.ttf")
 selectedColor = Color( 55, 138, 34, 255)
+orbited = 0
+orbiter = 1
 
 def dot( vector1, vector2):
     return vector1.x*vector2.x + vector1.y*vector2.y
@@ -37,7 +39,10 @@ def vectorSubtract( vector1, vector2):
     newVector = Vector2( vector1.x-vector2.x, vector1.y-vector2.y)
     return newVector
 def vectorReflect( vector1, vector2):
-    reflected = vectorSubtract( vector1 , vectorMultiply( vector2, 2 * dot( vector1, vector2)/dot( vector2, vector2)))
+    if dot( vector2, vector2) != 0:
+        reflected = vectorSubtract( vector1 , vectorMultiply( vector2, 2 * dot( vector1, vector2)/dot( vector2, vector2)))
+    else:
+        reflected = Vector2( 0, 0)
     return reflected
 class Planet():
     def __init__(self, x, y, size, density, style):
@@ -86,6 +91,8 @@ class Planet():
 
 def circle( x, y, r, color):
     draw_circle( int(( x+cameraX)*cameraZ + width/2), int(( y+cameraY)*cameraZ + height/2), r*cameraZ+1, color)
+def circle_line( x, y, r, color):
+    draw_circle_lines( int(( x+cameraX)*cameraZ + width/2), int(( y+cameraY)*cameraZ + height/2), r*cameraZ+1, color)
 def line( x1, y1, x2, y2, color):
     draw_line( int((x1+cameraX)*cameraZ + width/2), int((y1+cameraY)*cameraZ + height/2), int(( x2+cameraX)*cameraZ + width/2), int((y2+cameraY)*cameraZ + height/2), color)
 def text( text, x, y, size, color):
@@ -103,8 +110,6 @@ def fix(planets):
                             if Av+Bv != 0:
                                 Aratio = Av / (Av+Bv)
                                 Bratio = Bv / (Av+Bv)
-                            else:
-                                print("F")
                             excess = A.size + B.size - d
                             angle = atan2(B.y-A.y,B.x-A.x)
                             excessX = cos(angle) * e/2
@@ -139,8 +144,9 @@ def merge(planets):
                         A.vx = A.vx*Aratio + B.vx*Bratio
                         A.vy = A.vy*Aratio + B.vy*Bratio
                         A.density = A.density*Aratio + B.density*Bratio
-                        A.size = A.size+B.size
-                    
+                        A.size = A.size + B.size
+                        A.x = A.x*Aratio + B.x*Bratio
+                        A.x = A.x*Aratio + B.x*Bratio
 stars = []
 for i in range(1000):
     stars.append([ randint( -width*3, width*6), randint( -height*3, height*6), random()+0.5])
@@ -168,7 +174,7 @@ while not window_should_close():
                         dy = sin(a)*force
                         A.vx += dx / (A.size * A.density)
                         A.vy += dy / (A.size * A.density)
-        merge(planets)
+        merge(planets, orbited, orbiter)
         fix(planets)
     #input
     dt = get_frame_time()
@@ -180,7 +186,7 @@ while not window_should_close():
         playing = not playing
     if is_key_pressed(KEY_TAB):
         mode += 1
-        mode %= 4
+        mode %= 5
     if is_key_down(KEY_KP_ADD):
         power += 1
     if is_key_down(KEY_KP_SUBTRACT):
@@ -277,6 +283,20 @@ while not window_should_close():
                 if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
                     planets.pop(i)
                     break
+    if mode == 4:
+        selected = selected%3
+        if selected == 0:
+            if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                for i in range(len(planets)):
+                    if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
+                        orbited = i
+                        break
+        if selected == 1:
+            if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                for i in range(len(planets)):
+                    if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
+                        orbiter = i
+                        break
     #navigation
     if is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
         pmx = get_mouse_x()
@@ -384,14 +404,30 @@ while not window_should_close():
         velocitySum = 0
         massSum = 0
         for planet in planets:
-            velocitySum += np.hypot(planet.vx, planet.y)
+            velocitySum += sqrt(planet.vx**2 + planet.vy**2)
             massSum += planet.size * planet.density
         draw_text( 'mode: statistics', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
         draw_text_ex( textFont, 'Planets: '+str(len(planets)), Vector2( 30, 60), 32, 1, BLACK)
         draw_text_ex( textFont, 'velocity: '+str(int(velocitySum/10)), Vector2( 30, 85), 32, 1, BLACK)
         draw_text_ex( textFont, 'mass: '+str(int(massSum)), Vector2( 30, 110), 32, 1, BLACK)
-
+    if mode == 4:
+        circle_line( planets[orbiter].x, planets[orbiter].y, planets[orbiter].size+10, BLUE)
+        circle_line( planets[orbited].x, planets[orbited].y, planets[orbited].size+10, GREEN)
+        draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
+        draw_text( 'mode: make orbit', 20, 15, 30, BLACK)
+        if selected == 0:
+            draw_text_ex( textFont, '1. select orbited', Vector2( 30, 60), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, '1. select orbited', Vector2( 30, 60), 32, 1, BLACK)
+        if selected == 1:
+            draw_text_ex( textFont, '2. select orbiter', Vector2( 30, 85), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, '2. select orbiter', Vector2( 30, 85), 32, 1, BLACK)
+        if selected == 2:
+            draw_text_ex( textFont, '3. make orbit', Vector2( 30, 110), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, '3. make orbit', Vector2( 30, 110), 32, 1, BLACK)
     if drawing == True:
         line( startX, startY, ((get_mouse_x() - width/2)/cameraZ)-cameraX, ((get_mouse_y() - height/2)/cameraZ)-cameraY, WHITE)
     draw_text( str(power), 270, 17, 30, BLACK)
