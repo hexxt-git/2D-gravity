@@ -3,8 +3,8 @@ from random import *
 from pyray import *
 import numpy as np
 
-width = 1280
-height = 720
+width = 1200
+height = 700
 init_window( width, height, "2D gravity")
 
 cameraX = 1
