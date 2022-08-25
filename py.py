@@ -11,7 +11,7 @@ cameraX = 1
 cameraY = 1
 cameraZ = 0.5
 scroll = 0.11
-mode = 0
+mode = 5
 selected = 0
 power = 5
 drawing = False
@@ -29,6 +29,8 @@ textFont = load_font("font.ttf")
 selectedColor = Color( 55, 138, 34, 255)
 orbited = 0
 orbiter = 1
+isFolllowing = False
+followed = 0
 
 def dot( vector1, vector2):
     return vector1.x*vector2.x + vector1.y*vector2.y
@@ -108,18 +110,18 @@ def fix(planets):
                         if d < A.size + B.size:
                             Av = hypot(A.vx, A.vy)
                             Bv = hypot(B.vx, B.vy)
-                            Aratio, Bratio = 0, 0
+                            ratioB, ratioB = 0, 0
                             if Av+Bv != 0:
-                                Aratio = Av / (Av+Bv)
-                                Bratio = Bv / (Av+Bv)
+                                ratioB = Av / (Av+Bv)
+                                ratioB = Bv / (Av+Bv)
                             excess = A.size + B.size - d
                             angle = atan2(B.y-A.y,B.x-A.x)
                             excessX = cos(angle) * e/2
                             excessY = sin(angle) * e/2
-                            A.x -= excessX * Aratio
-                            A.y -= excessY * Aratio
-                            B.x += excessX * Bratio
-                            B.y += excessY * Bratio
+                            A.x -= excessX * ratioB
+                            A.y -= excessY * ratioB
+                            B.x += excessX * ratioB
+                            B.y += excessY * ratioB
             if walls:
                 if A.x-A.size <= -wallsX:
                     A.x -= A.x + wallsX - A.size
@@ -131,24 +133,38 @@ def fix(planets):
                     A.y -= A.y - wallsY + A.size
 def merge(planets):
     if doMerge:
-        for A in planets:
-            for B in planets:
-                if A.id != B.id:
+        for indexA, A in enumerate(planets):
+            for indexB, B in enumerate(planets):
+                if indexA != indexB:
                     if sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 )) < A.size + B.size:
-                        for C in range(len(planets)):
-                            if planets[C].id == B.id:
-                                planets.pop(C)
-                                break
-                        Aratio = mass(A) / (mass(A)+mass(B))
-                        Bratio = mass(B) / (mass(A)+mass(B))
+                        ratioA = mass(A) / (mass(A)+mass(B))
+                        ratioB = mass(B) / (mass(A)+mass(B))
                         for channel in range(4):
-                            A.style[channel] = int(A.style[channel]*Aratio + B.style[channel]*Bratio)
-                        A.vx = A.vx*Aratio + B.vx*Bratio
-                        A.vy = A.vy*Aratio + B.vy*Bratio
-                        A.density = A.density*Aratio + B.density*Bratio
+                            A.style[channel] = int(A.style[channel]*ratioA + B.style[channel]*ratioB)
+                            A.vx = A.vx*ratioA + B.vx*ratioB
+                        A.vy = A.vy*ratioA + B.vy*ratioB
+                        A.density = A.density*ratioA + B.density*ratioB
                         A.size = sqrt( pow( A.size, 2) + pow( B.size, 2) )
-                        A.x = A.x*Aratio + B.x*Bratio
-                        A.x = A.x*Aratio + B.x*Bratio
+                        A.x = A.x*ratioA + B.x*ratioB
+                        A.x = A.x*ratioA + B.x*ratioB
+                        planets.pop(indexB)
+                        print('pop ', indexB)
+                        global followed
+                        global orbiter
+                        global orbited
+                        if indexB == followed:
+                            isFolllowing = False
+                            followed = indexA
+                        if indexB == orbiter:
+                            orbiter = indexA
+                        if indexB == orbited:
+                            orbited = indexA
+                        if indexB < followed:
+                            followed = followed - 1
+                        if indexB < orbiter:
+                            orbiter = orbiter - 1
+                        if indexB < orbited:
+                            orbited = orbited - 1
 stars = []
 for i in range(1000):
     stars.append([ randint( -width*3, width*6), randint( -height*3, height*6), random()+0.5])
@@ -176,6 +192,7 @@ while not window_should_close():
                         dy = sin(a)*force
                         A.vx += dx / mass(A)
                         A.vy += dy / mass(A)
+        print(followed)
         merge(planets)
         fix(planets)
     #input
@@ -188,7 +205,7 @@ while not window_should_close():
         playing = not playing
     if is_key_pressed(KEY_TAB):
         mode += 1
-        mode %= 5
+        mode %= 6
     if is_key_down(KEY_KP_ADD):
         power += 1
     if is_key_down(KEY_KP_SUBTRACT):
@@ -299,6 +316,17 @@ while not window_should_close():
                     if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
                         orbiter = i
                         break
+    if mode == 5:
+        selected = selected%2
+        if selected == 0:
+            if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                for i in range(len(planets)):
+                    if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
+                        isFolllowing = True
+                        followed = i
+        if selected == 1:
+            if is_key_down(KEY_ENTER) or is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                isFolllowing = False
     #navigation
     if is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
         pmx = get_mouse_x()
@@ -316,6 +344,10 @@ while not window_should_close():
     if get_mouse_wheel_move() < 0: # zoom out
         if cameraZ > 0.0001:
             cameraZ *= 1 - scroll
+    if isFolllowing:
+        print(followed)
+        cameraX = -planets[followed].x
+        cameraY = -planets[followed].y
     #rendering
     begin_drawing()
     clear_background(Color( 3, 3, 5, 255))
@@ -328,6 +360,8 @@ while not window_should_close():
     if walls:
         draw_rectangle_lines( int(( -wallsX+cameraX)*cameraZ + width/2), int(( -wallsY+cameraY)*cameraZ + height/2), int(wallsX*2*cameraZ), int(wallsY*2*cameraZ), WHITE)
     #ui
+    if isFolllowing:
+            circle_line( planets[followed].x, planets[followed].y, planets[followed].size*1.1, BLUE)
     draw_rectangle( 10, 10, 300, 350, Color( 255, 255, 255, 150))
     draw_rectangle_lines( 10, 10, 300, 350, WHITE)
     if mode == 0:
@@ -429,6 +463,17 @@ while not window_should_close():
             draw_text_ex( textFont, '3. make orbit', Vector2( 30, 110), 32, 1, selectedColor)
         else:
             draw_text_ex( textFont, '3. make orbit', Vector2( 30, 110), 32, 1, BLACK)
+    if mode == 5:
+        draw_text( 'mode: camera follow', 20, 15, 30, BLACK)
+        draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
+        if selected == 0:
+            draw_text_ex( textFont, '1. follow', Vector2( 30, 60), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, '1. follow', Vector2( 30, 60), 32, 1, BLACK)
+        if selected == 1:
+            draw_text_ex( textFont, '1. release', Vector2( 30, 85), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, '1. release', Vector2( 30, 85), 32, 1, BLACK)
     if drawing == True:
         line( startX, startY, ((get_mouse_x() - width/2)/cameraZ)-cameraX, ((get_mouse_y() - height/2)/cameraZ)-cameraY, WHITE)
     draw_text( str(power), 270, 17, 30, BLACK)
