@@ -11,7 +11,7 @@ cameraX = 1
 cameraY = 1
 cameraZ = 0.5
 scroll = 0.11
-mode = 5
+mode = 0
 selected = 0
 power = 5
 drawing = False
@@ -91,7 +91,6 @@ class Planet():
                         newVector = vectorMultiply( newVector, 0.3)
                     self.vx = newVector.x
                     self.vy = newVector.y
-                    
 
 def circle( x, y, r, color):
     draw_circle( int(( x+cameraX)*cameraZ + width/2), int(( y+cameraY)*cameraZ + height/2), r*cameraZ+1, color)
@@ -148,7 +147,6 @@ def merge(planets):
                         A.x = A.x*ratioA + B.x*ratioB
                         A.x = A.x*ratioA + B.x*ratioB
                         planets.pop(indexB)
-                        print('pop ', indexB)
                         global followed
                         global orbiter
                         global orbited
@@ -192,7 +190,6 @@ while not window_should_close():
                         dy = sin(a)*force
                         A.vx += dx / mass(A)
                         A.vy += dy / mass(A)
-        print(followed)
         merge(planets)
         fix(planets)
     #input
@@ -212,7 +209,7 @@ while not window_should_close():
         power -= 1
     #settings
     if mode == 0:
-        selected = selected%5
+        selected = selected%6
         if is_key_pressed(KEY_RIGHT)|is_key_pressed(KEY_LEFT):
             if selected == 0:
                 walls = not walls
@@ -316,6 +313,17 @@ while not window_should_close():
                     if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
                         orbiter = i
                         break
+        if selected == 2:
+            if is_key_pressed(KEY_ENTER) or is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+                if orbiter != orbited:
+                    A = planets[orbiter]
+                    B = planets[orbited]
+                    d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
+                    a = atan2(B.y-A.y,B.x-A.x)
+                    force =  G * mass(A) * mass(B) / pow( d, 2)
+                    print(force)
+                    A.vx += cos(a)*force / mass(A)
+                    A.vy += sin(a)*force / mass(A)
     if mode == 5:
         selected = selected%2
         if selected == 0:
@@ -345,7 +353,6 @@ while not window_should_close():
         if cameraZ > 0.0001:
             cameraZ *= 1 - scroll
     if isFolllowing:
-        print(followed)
         cameraX = -planets[followed].x
         cameraY = -planets[followed].y
     #rendering
@@ -435,6 +442,8 @@ while not window_should_close():
             draw_text_ex( textFont, 'A: '+str(template.style[3]), Vector2( 30, 225), 32, 1, BLACK)
     if mode == 2:
         draw_text( 'mode: deleting', 20, 15, 30, BLACK)
+        draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
+        draw_text_ex( textFont, '1. delete', Vector2( 30, 60), 32, 1, selectedColor)
     if mode == 3:
         velocitySum = 0
         massSum = 0
@@ -464,16 +473,16 @@ while not window_should_close():
         else:
             draw_text_ex( textFont, '3. make orbit', Vector2( 30, 110), 32, 1, BLACK)
     if mode == 5:
-        draw_text( 'mode: camera follow', 20, 15, 30, BLACK)
+        draw_text( 'mode: camera', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
         if selected == 0:
             draw_text_ex( textFont, '1. follow', Vector2( 30, 60), 32, 1, selectedColor)
         else:
             draw_text_ex( textFont, '1. follow', Vector2( 30, 60), 32, 1, BLACK)
         if selected == 1:
-            draw_text_ex( textFont, '1. release', Vector2( 30, 85), 32, 1, selectedColor)
+            draw_text_ex( textFont, '2. release', Vector2( 30, 85), 32, 1, selectedColor)
         else:
-            draw_text_ex( textFont, '1. release', Vector2( 30, 85), 32, 1, BLACK)
+            draw_text_ex( textFont, '2. release', Vector2( 30, 85), 32, 1, BLACK)
     if drawing == True:
         line( startX, startY, ((get_mouse_x() - width/2)/cameraZ)-cameraX, ((get_mouse_y() - height/2)/cameraZ)-cameraY, WHITE)
     draw_text( str(power), 270, 17, 30, BLACK)
