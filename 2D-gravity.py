@@ -12,6 +12,7 @@ cameraY = 1
 cameraZ = 0.5
 scroll = 0.11
 mode = 0
+modes = ['settings','drawing','deleting','stats','orbiter','camera']
 selected = 0
 power = 5
 drawing = False
@@ -201,7 +202,10 @@ while not window_should_close():
     if is_key_pressed(KEY_SPACE):
         playing = not playing
     if is_key_pressed(KEY_TAB):
-        mode += 1
+        if is_key_down(KEY_LEFT_SHIFT):
+            mode -= 1
+        else:
+            mode += 1
         mode %= 6
     if is_key_down(KEY_KP_ADD):
         power += 1
@@ -371,6 +375,12 @@ while not window_should_close():
             circle_line( planets[followed].x, planets[followed].y, planets[followed].size*1.1, BLUE)
     draw_rectangle( 10, 10, 300, 350, Color( 255, 255, 255, 150))
     draw_rectangle_lines( 10, 10, 300, 350, WHITE)
+    for i in range(6):
+        draw_rectangle( 320, i*60+10, 150, 50, Color( 255, 255, 255, 180))
+        draw_rectangle_lines( 320, i*60+10, 150, 50, WHITE)
+        draw_text( modes[i], 325, i*60+18, 34, BLACK)
+        if mode == i:
+            draw_text( modes[i], 325, i*60+18, 34, selectedColor)
     if mode == 0:
         draw_text( 'mode: settings', 20, 15, 30, BLACK)
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
