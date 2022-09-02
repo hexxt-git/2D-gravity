@@ -18,7 +18,7 @@ power = 5
 drawing = False
 playing = True
 bounce = True
-doMerge = True
+doMerge = False
 simSpeed = 0.3
 randomize = False
 walls = False
@@ -298,11 +298,16 @@ while not window_should_close():
             if selected == 3:
                 randomize = not randomize
     if mode == 2:
-        if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
-            for i in range(len(planets)):
-                if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
-                    planets.pop(i)
-                    break
+        selected %= 2
+        if selected == 0:
+            if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                for i in range(len(planets)):
+                    if sqrt( pow(planets[i].x-(((get_mouse_x() - width/2)/cameraZ)-cameraX), 2) + pow(planets[i].y-(((get_mouse_y() - height/2)/cameraZ)-cameraY), 2) ) <= planets[i].size:
+                        planets.pop(i)
+                        break
+        if selected == 1:
+            if is_mouse_button_down(MOUSE_BUTTON_RIGHT):
+                planets = []
     if mode == 4:
         selected = selected%3
         if selected == 0:
@@ -451,9 +456,16 @@ while not window_should_close():
         else:
             draw_text_ex( textFont, 'A: '+str(template.style[3]), Vector2( 30, 225), 32, 1, BLACK)
     if mode == 2:
-        draw_text( 'mode: deleting', 20, 15, 30, BLACK)
+        draw_text( 'mode: deleting', 20, 15, 30, BLACK) 
         draw_rectangle( 20, 50, 280, 300, Color( 255, 255, 255, 100))
-        draw_text_ex( textFont, '1. delete', Vector2( 30, 60), 32, 1, selectedColor)
+        if selected == 0:
+            draw_text_ex( textFont, 'delete ', Vector2( 30, 60), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, 'delete ', Vector2( 30, 60), 32, 1, BLACK)
+        if selected == 1:
+            draw_text_ex( textFont, 'delete all ', Vector2( 30, 85), 32, 1, selectedColor)
+        else:
+            draw_text_ex( textFont, 'delete all ', Vector2( 30, 85), 32, 1, BLACK)
     if mode == 3:
         velocitySum = 0
         massSum = 0
