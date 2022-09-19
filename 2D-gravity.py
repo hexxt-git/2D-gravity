@@ -172,6 +172,9 @@ planets = []
 for i in range(30):
     planets.append(Planet( randint( -1500, 1500), randint( -1500, 1500), randint( 10, 80), random()*15+15, [ randint( 50, 200), randint( 50, 200), randint( 50, 200), 255]))
 
+planets.append(Planet( 0, 0, 100, 50, [ 220, 200, 30, 255]))
+planets.append(Planet( 500, 0, 30, 40, [ 30, 50, 200, 255]))
+
 template = Planet( 0, 0, 50, 10, [ 0, 80, 180, 255])
 
 set_target_fps(60)
@@ -327,12 +330,19 @@ while not window_should_close():
                 if orbiter != orbited:
                     A = planets[orbiter]
                     B = planets[orbited]
+
+                    A.y = B.y
+
                     d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
                     a = atan2(B.y-A.y,B.x-A.x)
+                    
                     force =  G * mass(A) * mass(B) / pow( d, 2)
-                    print(force)
-                    A.vx += cos(a)*force / mass(A)
-                    A.vy += sin(a)*force / mass(A)
+
+                    B.vx = 0
+                    B.vy = 0
+
+                    A.vy = force / mass(A) * 20
+                    A.vx = 0
     if mode == 5:
         selected = selected%2
         if selected == 0:
