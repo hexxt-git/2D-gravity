@@ -2,6 +2,16 @@
 hello, this is my 2D gravity and space simulator. written in python and pyray
 ![image](https://user-images.githubusercontent.com/88392191/193830128-23c6abd8-903e-4c2a-8dab-d50f99b4229f.png)
 
+# usage
+- clone the code
+
+  ```git clone https://github.com/9EED/2D-gravity/```
+- install dependencies
+
+  ```pip install pyray```
+- run the code
+
+  ```python3 2D-gravity.py```
 
 # controlls
 [tab] switch modes settings, drawing, deleting, orbits and statistics <br>
