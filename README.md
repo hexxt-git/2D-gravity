@@ -18,7 +18,7 @@ hello, this is my 2D gravity and space simulator. written in python and pyray
 [up][down] select a setting <br>
 [left][right] change the selected setting <br>
 [mouse left]+[drag] pan around <br>
-[mouse scroll] zoom in and out
+[mouse scroll] zoom in and out <br>
 [space] pause and unpause
 
 # settings
