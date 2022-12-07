@@ -333,16 +333,8 @@ while not window_should_close():
 
                     A.y = B.y
 
-                    d = sqrt( pow( B.x - A.x, 2 )+pow( B.y - A.y, 2 ))
-                    a = atan2(B.y-A.y,B.x-A.x)
-                    
-                    force =  G * mass(A) * mass(B) / pow( d, 2)
-
-                    B.vx = 0
-                    B.vy = 0
-
-                    A.vy = force / mass(A) * 20
-                    A.vx = 0
+                    A.vy = sqrt( G * mass(B) / (4 * pi* pi )) + B.vy
+                    A.vx = B.vx
     if mode == 5:
         selected = selected%2
         if selected == 0:
